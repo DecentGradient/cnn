@@ -345,7 +345,12 @@ def conv_net(x_tensor, keep_prob):
     net = conv2d_maxpool(x_tensor=x_tensor, conv_num_outputs=100, conv_ksize=(2,2), conv_strides=(2,2), pool_ksize=(2,2), pool_strides=(2,2))
     net = tf.nn.dropout(net,keep_prob)
     net = conv2d_maxpool(x_tensor=net, conv_num_outputs=80, conv_ksize=(2,2), conv_strides=(2,2), pool_ksize=(2,2), pool_strides=(2,2))
-
+    net = tf.nn.dropout(net, keep_prob)
+    net = conv2d_maxpool(x_tensor=net, conv_num_outputs=80, conv_ksize=(1, 1), conv_strides=(1, 1), pool_ksize=(1, 1),
+                         pool_strides=(1, 1))
+    net = tf.nn.dropout(net, keep_prob)
+    net = conv2d_maxpool(x_tensor=net, conv_num_outputs=80, conv_ksize=(1, 1), conv_strides=(1, 1), pool_ksize=(1, 1),
+                         pool_strides=(1, 1))
 
     # TODO: Apply a Flatten Layer
     # Function Definition from Above:
@@ -356,9 +361,13 @@ def conv_net(x_tensor, keep_prob):
     #    Play around with different number of outputs
     # Function Definition from Above:
     #   fully_conn(x_tensor, num_outputs)
+    net = fully_conn(net,100)
+    net = tf.nn.dropout(net,keep_prob)
+    net = fully_conn(net,75)
+    net = tf.nn.dropout(net,keep_prob)
     net = fully_conn(net,50)
     net = tf.nn.dropout(net,keep_prob)
-    net = fully_conn(net,10)
+    net = fully_conn(net,30)
     
     # TODO: Apply an Output Layer
     #    Set this to the number of classes
@@ -480,20 +489,20 @@ keep_probability = 0.50
 """
 DON'T MODIFY ANYTHING IN THIS CELL
 """
-print('Checking the Training on a Single Batch...')
-with tf.Session() as sess:
-    # Initializing the variables
-    sess.run(tf.global_variables_initializer())
-    
-    # Training cycle
-    for epoch in range(epochs):
-        batch_i = 1
-        for batch_features, batch_labels in helper.load_preprocess_training_batch(batch_i, batch_size):
-            train_neural_network(sess, optimizer, keep_probability, batch_features, batch_labels)
-        print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
-        print_stats(sess, batch_features, batch_labels, cost, accuracy)
-
-
+# print('Checking the Training on a Single Batch...')
+# with tf.Session() as sess:
+#     # Initializing the variables
+#     sess.run(tf.global_variables_initializer())
+#
+#     # Training cycle
+#     for epoch in range(epochs):
+#         batch_i = 1
+#         for batch_features, batch_labels in helper.load_preprocess_training_batch(batch_i, batch_size):
+#             train_neural_network(sess, optimizer, keep_probability, batch_features, batch_labels)
+#         print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
+#         print_stats(sess, batch_features, batch_labels, cost, accuracy)
+#
+# """
 # ### Fully Train the Model
 # Now that you got a good accuracy with a single CIFAR-10 batch, try it with all five batches.
 
@@ -508,6 +517,8 @@ print('Training...')
 with tf.Session() as sess:
     # Initializing the variables
     sess.run(tf.global_variables_initializer())
+    #loader = tf.train.import_meta_graph(save_model_path + '.meta')
+    #loader.restore(sess, save_model_path)
     
     # Training cycle
     for epoch in range(epochs):
@@ -553,7 +564,7 @@ def test_model():
     Test the saved model against the test dataset
     """
 
-    test_features, test_labels = pickle.load(open('preprocess_training.p', mode='rb'))
+    test_features, test_labels = pickle.load(open('preprocess_test.p', mode='rb'))
     loaded_graph = tf.Graph()
 
     with tf.Session(graph=loaded_graph) as sess:
