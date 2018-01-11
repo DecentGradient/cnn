@@ -342,15 +342,15 @@ def conv_net(x_tensor, keep_prob):
     # TODO: Apply 1, 2, or 3 Convolution and Max Pool layers
     #    Play around with different number of outputs, kernel size and stride
     # Function Definition from Above:
-    net = conv2d_maxpool(x_tensor=x_tensor, conv_num_outputs=100, conv_ksize=(2,2), conv_strides=(2,2), pool_ksize=(2,2), pool_strides=(2,2))
+    net = conv2d_maxpool(x_tensor=x_tensor, conv_num_outputs=100, conv_ksize=(1, 1), conv_strides=(1, 1), pool_ksize=(2, 2),
+                         pool_strides=(2, 2))
+    net = tf.nn.dropout(net, keep_prob)
+    net = conv2d_maxpool(x_tensor=net, conv_num_outputs=100, conv_ksize=(1, 1), conv_strides=(1, 1), pool_ksize=(2,2),
+                         pool_strides=(2, 2))
+
     net = tf.nn.dropout(net,keep_prob)
-    net = conv2d_maxpool(x_tensor=net, conv_num_outputs=80, conv_ksize=(2,2), conv_strides=(2,2), pool_ksize=(2,2), pool_strides=(2,2))
+    net = conv2d_maxpool(x_tensor=net, conv_num_outputs=80, conv_ksize=(1,1), conv_strides=(1,1), pool_ksize=(2,2), pool_strides=(2,2))
     net = tf.nn.dropout(net, keep_prob)
-    net = conv2d_maxpool(x_tensor=net, conv_num_outputs=80, conv_ksize=(1, 1), conv_strides=(1, 1), pool_ksize=(1, 1),
-                         pool_strides=(1, 1))
-    net = tf.nn.dropout(net, keep_prob)
-    net = conv2d_maxpool(x_tensor=net, conv_num_outputs=80, conv_ksize=(1, 1), conv_strides=(1, 1), pool_ksize=(1, 1),
-                         pool_strides=(1, 1))
 
     # TODO: Apply a Flatten Layer
     # Function Definition from Above:
@@ -361,13 +361,12 @@ def conv_net(x_tensor, keep_prob):
     #    Play around with different number of outputs
     # Function Definition from Above:
     #   fully_conn(x_tensor, num_outputs)
+  
     net = fully_conn(net,100)
     net = tf.nn.dropout(net,keep_prob)
     net = fully_conn(net,75)
     net = tf.nn.dropout(net,keep_prob)
     net = fully_conn(net,50)
-    net = tf.nn.dropout(net,keep_prob)
-    net = fully_conn(net,30)
     
     # TODO: Apply an Output Layer
     #    Set this to the number of classes
@@ -402,8 +401,17 @@ logits = conv_net(x, keep_prob)
 logits = tf.identity(logits, name='logits')
 
 # Loss and Optimizer
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y))
-optimizer = tf.train.AdamOptimizer().minimize(cost)
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=y))
+global_step = tf.Variable(0, trainable=False)
+starter_learning_rate = 0.5
+learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
+                                           1000, 0.96, staircase=False)
+# Passing global_step to minimize() will increment it at each step.
+optimizer = (
+    tf.train.GradientDescentOptimizer(learning_rate)
+    .minimize(cost, global_step=global_step)
+)
+
 
 # Accuracy
 correct_pred = tf.equal(tf.argmax(logits, 1), tf.argmax(y, 1))
@@ -476,9 +484,9 @@ def print_stats(session, feature_batch, label_batch, cost, accuracy):
 # In[12]:
 
 # TODO: Tune Parameters
-epochs = 70
+epochs = 140
 batch_size = 128
-keep_probability = 0.50
+keep_probability = 0.80
 
 
 # ### Train on a Single CIFAR-10 Batch
@@ -512,11 +520,13 @@ DON'T MODIFY ANYTHING IN THIS CELL
 DON'T MODIFY ANYTHING IN THIS CELL
 """
 save_model_path = './image_classification'
+saver = tf.train.Saver()
 
 print('Training...')
 with tf.Session() as sess:
     # Initializing the variables
-    sess.run(tf.global_variables_initializer())
+    #sess.run(tf.global_variables_initializer())
+    saver.restore(sess,save_model_path)
     #loader = tf.train.import_meta_graph(save_model_path + '.meta')
     #loader.restore(sess, save_model_path)
     
